@@ -61,7 +61,7 @@ const makeSut = () => {
   };
 };
 
-describe.only("GetBalanceUseCase", () => {
+describe("GetBalanceUseCase", () => {
   it(`should be able to get the balance`, async () => {
     const { usersRepository, createStatementUseCase, getBalanceUseCase } =
       makeSut();
