@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { container } from "tsyringe";
-import { CreateTransferStatementUseCase } from "./CreateTransferStatmentUseCase";
+import { CreateTransferStatementUseCase } from "./CreateTransferStatementUseCase";
 
 export class CreateTransferStatementController {
   async execute(request: Request, response: Response) {

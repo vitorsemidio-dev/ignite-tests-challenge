@@ -2,7 +2,7 @@ import { inject, injectable } from "tsyringe";
 import { IUsersRepository } from "../../../users/repositories/IUsersRepository";
 import { OperationType } from "../../entities/Statement";
 import { IStatementsRepository } from "../../repositories/IStatementsRepository";
-import { AppError } from "./../../../../shared/errors/AppError";
+import { CreateTransferStatementError } from "./CreateTransferStatementError";
 import { ICreateTransferStatementDTO } from "./ICreateTransferStatementDTO";
 
 @injectable()
@@ -24,17 +24,19 @@ export class CreateTransferStatementUseCase {
     const sender = await this.usersRepository.findById(sender_id);
 
     if (sender_id === receiver_id) {
-      throw new AppError("You can't transfer to yourself", 400);
+      throw new CreateTransferStatementError.OperationForbidden(
+        "You can't transfer to yourself"
+      );
     }
 
     if (!sender) {
-      throw new AppError("Sender not found", 404);
+      throw new CreateTransferStatementError.UserNotFound("Sender not found");
     }
 
     const receiver = await this.usersRepository.findById(receiver_id);
 
     if (!receiver) {
-      throw new AppError("Receiver not found", 404);
+      throw new CreateTransferStatementError.UserNotFound("Receiver not found");
     }
 
     const { balance } = await this.statementsRepository.getUserBalance({
@@ -42,7 +44,9 @@ export class CreateTransferStatementUseCase {
     });
 
     if (balance < amount) {
-      throw new AppError("Insufficient funds", 400);
+      throw new CreateTransferStatementError.InsufficientFunds(
+        "Insufficient funds"
+      );
     }
 
     await this.statementsRepository.create({
