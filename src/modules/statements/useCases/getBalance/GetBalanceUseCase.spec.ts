@@ -1,8 +1,10 @@
+import {
+  makeDepositStatementDto,
+  makeWithdrawStatementDto,
+} from "../../../../__tests__/StatementFactory";
 import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
-import { OperationType } from "../../entities/Statement";
 import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
 import { CreateStatementUseCase } from "../createStatement/CreateStatementUseCase";
-import { ICreateStatementDTO } from "../createStatement/ICreateStatementDTO";
 import { InMemoryUsersRepository } from "./../../../users/repositories/in-memory/InMemoryUsersRepository";
 import { GetBalanceError } from "./GetBalanceError";
 import { GetBalanceUseCase } from "./GetBalanceUseCase";
@@ -23,21 +25,8 @@ const makeDTO = () => {
     password: password || userDefault.password,
   });
 
-  const makeStatementDto = ({
-    amount,
-    description,
-    type,
-    user_id,
-  }: ICreateStatementDTO) => ({
-    amount: amount,
-    description: description,
-    type: type,
-    user_id: user_id,
-  });
-
   return {
     makeUserDto,
-    makeStatementDto,
   };
 };
 
@@ -65,25 +54,19 @@ describe("GetBalanceUseCase", () => {
   it(`should be able to get the balance`, async () => {
     const { usersRepository, createStatementUseCase, getBalanceUseCase } =
       makeSut();
-    const { makeStatementDto, makeUserDto } = makeDTO();
+    const { makeUserDto } = makeDTO();
 
     const userCreated = await usersRepository.create(makeUserDto());
-    const depositStatementDto1 = makeStatementDto({
+    const depositStatementDto1 = makeDepositStatementDto({
       amount: 10,
-      description: "any_description",
-      type: OperationType.DEPOSIT,
       user_id: userCreated.id!,
     });
-    const depositStatementDto2 = makeStatementDto({
+    const depositStatementDto2 = makeDepositStatementDto({
       amount: 20,
-      description: "any_description",
-      type: OperationType.DEPOSIT,
       user_id: userCreated.id!,
     });
-    const withdrawStatementDto1 = makeStatementDto({
+    const withdrawStatementDto1 = makeWithdrawStatementDto({
       amount: 5,
-      description: "any_description",
-      type: OperationType.WITHDRAW,
       user_id: userCreated.id!,
     });
 
