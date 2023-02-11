@@ -1,29 +1,22 @@
-import { ShowUserProfileError } from "./ShowUserProfileError";
+import { makeShowUserProfileUseCase } from "../../../../__tests__/ShowUserProfileUseCase";
+import { makeUserDto } from "../../../../__tests__/UserFactory";
 import { User } from "../../entities/User";
-import { InMemoryUsersRepository } from "../../repositories/in-memory/InMemoryUsersRepository";
-import { ICreateUserDTO } from "../createUser/ICreateUserDTO";
-import { ShowUserProfileUseCase } from "./ShowUserProfileUseCase";
+import { ShowUserProfileError } from "./ShowUserProfileError";
 
 const makeSut = () => {
-  const usersRepository = new InMemoryUsersRepository();
-  const showUserProfileUseCase = new ShowUserProfileUseCase(usersRepository);
-  const createUserDto: ICreateUserDTO = {
-    email: "test@email.com",
-    name: "test",
-    password: "test",
-  };
+  const { showUserProfileUseCase, usersRepository } =
+    makeShowUserProfileUseCase();
 
   return {
     usersRepository,
     showUserProfileUseCase,
-    createUserDto,
   };
 };
 
 describe("ShowUserProfileError", () => {
   it("should be able to show user profile", async () => {
-    const { createUserDto, showUserProfileUseCase, usersRepository } =
-      makeSut();
+    const { showUserProfileUseCase, usersRepository } = makeSut();
+    const createUserDto = makeUserDto();
     const userCreated = await usersRepository.create(createUserDto);
 
     const user = await showUserProfileUseCase.execute(userCreated.id!);
