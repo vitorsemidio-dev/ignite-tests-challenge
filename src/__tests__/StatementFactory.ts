@@ -17,21 +17,21 @@ export function makeStatementDto(override: OverrideStatement) {
 
 type OverrideStatementDeposit = Omit<OverrideStatement, "type">;
 
-export function makeStatementDepositDto(
+export function makeDepositStatementDto(
   override: OverrideStatementDeposit = {}
 ) {
   return makeStatementDto({ type: OperationType.DEPOSIT, ...override });
 }
 
 type OverrideStatementWithdraw = Omit<OverrideStatement, "type">;
-export function makeStatementWithdrawDto(
+export function makeWithdrawStatementDto(
   override: OverrideStatementWithdraw = {}
 ) {
   return makeStatementDto({ type: OperationType.WITHDRAW, ...override });
 }
 
 type OverrideStatementTransfer = Partial<ICreateTransferStatementDTO>;
-export function makeStatementTransferDto(override: OverrideStatementTransfer) {
+export function makeTransferStatementDto(override: OverrideStatementTransfer) {
   return {
     amount: 100,
     description: "any_description",

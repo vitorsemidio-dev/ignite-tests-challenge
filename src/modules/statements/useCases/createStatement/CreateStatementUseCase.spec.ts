@@ -1,6 +1,6 @@
 import {
-  makeStatementDepositDto,
-  makeStatementWithdrawDto,
+  makeDepositStatementDto,
+  makeWithdrawStatementDto,
 } from "../../../../__tests__/StatementFactory";
 import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
 import { OperationType, Statement } from "../../entities/Statement";
@@ -51,7 +51,7 @@ describe("CreateStatementUseCase", () => {
     const { makeUserDto } = makeDTO();
 
     const userCreated = await usersRepository.create(makeUserDto());
-    const depositStatementDto = makeStatementDepositDto({
+    const depositStatementDto = makeDepositStatementDto({
       user_id: userCreated.id!,
     });
 
@@ -72,11 +72,11 @@ describe("CreateStatementUseCase", () => {
     const { makeUserDto } = makeDTO();
 
     const userCreated = await usersRepository.create(makeUserDto());
-    const depositStatementDto = makeStatementDepositDto({
+    const depositStatementDto = makeDepositStatementDto({
       amount: 1000,
       user_id: userCreated.id!,
     });
-    const withdrawStatementDto = makeStatementWithdrawDto({
+    const withdrawStatementDto = makeWithdrawStatementDto({
       amount: 1,
       user_id: userCreated.id!,
     });
@@ -99,7 +99,7 @@ describe("CreateStatementUseCase", () => {
   it(`should not be able to ${OperationType.WITHDRAW} if user does not exist`, async () => {
     const { createStatementUseCase } = makeSut();
 
-    const withdrawStatementDto = makeStatementWithdrawDto({
+    const withdrawStatementDto = makeWithdrawStatementDto({
       user_id: "any_user_id",
     });
 
@@ -111,7 +111,7 @@ describe("CreateStatementUseCase", () => {
   it(`should not be able to ${OperationType.DEPOSIT} if user does not exist`, async () => {
     const { createStatementUseCase } = makeSut();
 
-    const depositStatementDto = makeStatementDepositDto({
+    const depositStatementDto = makeDepositStatementDto({
       user_id: "any_user_id",
     });
 
@@ -125,11 +125,11 @@ describe("CreateStatementUseCase", () => {
     const { makeUserDto } = makeDTO();
 
     const userCreated = await usersRepository.create(makeUserDto());
-    const depositStatementDto = makeStatementDepositDto({
+    const depositStatementDto = makeDepositStatementDto({
       amount: 1,
       user_id: userCreated.id!,
     });
-    const withdrawStatementDto = makeStatementWithdrawDto({
+    const withdrawStatementDto = makeWithdrawStatementDto({
       amount: 1000,
       user_id: userCreated.id!,
     });

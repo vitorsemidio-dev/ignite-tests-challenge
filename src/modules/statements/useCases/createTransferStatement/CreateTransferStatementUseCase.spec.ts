@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import {
-  makeStatementDepositDto,
-  makeStatementTransferDto,
+  makeDepositStatementDto,
+  makeTransferStatementDto,
 } from "../../../../__tests__/StatementFactory";
 import { InMemoryUsersRepository } from "../../../users/repositories/in-memory/InMemoryUsersRepository";
 import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
@@ -70,13 +70,13 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
     await statementsRepository.create(
-      makeStatementDepositDto({
+      makeDepositStatementDto({
         amount: 1000,
         user_id: userSender.id!,
       })
     );
 
-    const transferStatementDto = makeStatementTransferDto({
+    const transferStatementDto = makeTransferStatementDto({
       amount: 100,
       sender_id: userSender.id!,
       receiver_id: userReceiver.id!,
@@ -104,7 +104,7 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
 
-    const transferStatementDto = makeStatementTransferDto({
+    const transferStatementDto = makeTransferStatementDto({
       sender_id: userSender.id!,
       receiver_id: userReceiver.id!,
     });
@@ -125,7 +125,7 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
 
-    const transferStatementDto = makeStatementTransferDto({
+    const transferStatementDto = makeTransferStatementDto({
       sender_id: userSender.id!,
       receiver_id: uuidv4(),
     });
@@ -147,7 +147,7 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
 
-    const transferStatementDto = makeStatementTransferDto({
+    const transferStatementDto = makeTransferStatementDto({
       sender_id: userSender.id!,
       receiver_id: userSender.id!,
     });
