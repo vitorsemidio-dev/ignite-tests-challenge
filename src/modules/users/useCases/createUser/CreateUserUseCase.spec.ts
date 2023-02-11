@@ -1,39 +1,35 @@
-import { InMemoryUsersRepository } from "../../repositories/in-memory/InMemoryUsersRepository";
+import { makeCreateUserUseCase } from "../../../../__tests__/CreateUserUseCaseFactory";
+import { makeUserDto } from "../../../../__tests__/UserFactory";
 import { CreateUserError } from "./CreateUserError";
-import { CreateUserUseCase } from "./CreateUserUseCase";
-import { ICreateUserDTO } from "./ICreateUserDTO";
 
 const makeSut = () => {
-  const usersRepository = new InMemoryUsersRepository();
-  const createUserUseCase = new CreateUserUseCase(usersRepository);
-  const createUserDto: ICreateUserDTO = {
-    email: "test@email.com",
-    name: "test",
-    password: "test",
-  };
+  const { createUserUseCase, usersRepository } = makeCreateUserUseCase();
 
   return {
     usersRepository,
     createUserUseCase,
-    createUserDto,
   };
 };
 
 describe("CreateUserUseCase", () => {
   it("should be able to create new users", async () => {
-    const { createUserDto, createUserUseCase } = makeSut();
-    const user = await createUserUseCase.execute(createUserDto);
+    const { createUserUseCase } = makeSut();
+    const user = await createUserUseCase.execute(makeUserDto());
 
     expect(user).toHaveProperty("id");
   });
 
   it("should not be able to create new users when email is already taken", async () => {
-    const { createUserDto, createUserUseCase } = makeSut();
+    const { createUserUseCase } = makeSut();
+    const user = await createUserUseCase.execute(makeUserDto());
+    const userWithSameEmail = makeUserDto({
+      email: user.email,
+      name: "any_name",
+      password: "any_password",
+    });
+
     await expect(async () => {
-      await createUserUseCase.execute(createUserDto);
-      createUserDto.name = "any_name";
-      createUserDto.password = "any_password";
-      await createUserUseCase.execute(createUserDto);
+      await createUserUseCase.execute(userWithSameEmail);
     }).rejects.toBeInstanceOf(CreateUserError);
   });
 });

@@ -1,64 +1,30 @@
-import { CreateUserUseCase } from "../../../users/useCases/createUser/CreateUserUseCase";
-import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
-import { OperationType, Statement } from "../../entities/Statement";
-import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
-import { CreateStatementUseCase } from "../createStatement/CreateStatementUseCase";
-import { ICreateStatementDTO } from "../createStatement/ICreateStatementDTO";
-import { GetBalanceUseCase } from "../getBalance/GetBalanceUseCase";
-import { InMemoryUsersRepository } from "./../../../users/repositories/in-memory/InMemoryUsersRepository";
+import { makeCreateStatementUseCase } from "../../../../__tests__/CreateStatementUseCaseFactory";
+import { makeCreateUserUseCase } from "../../../../__tests__/CreateUserUseCaseFactory";
+import { makeGetBalanceUseCase } from "../../../../__tests__/GetBalanceUseCaseFactory";
+import { makeGetStatementOperationUseCase } from "../../../../__tests__/GetStatementOperationUseCaseFactory";
+import {
+  makeDepositStatementDto,
+  makeWithdrawStatementDto,
+} from "../../../../__tests__/StatementFactory";
+import { makeUserDto } from "../../../../__tests__/UserFactory";
+import { Statement } from "../../entities/Statement";
 import { GetStatementOperationError } from "./GetStatementOperationError";
-import { GetStatementOperationUseCase } from "./GetStatementOperationUseCase";
-
-const makeDTO = () => {
-  const userDefault = {
-    email: "test@email.com",
-    name: "test",
-    password: "test",
-  };
-  const makeUserDto = ({
-    email,
-    name,
-    password,
-  }: Partial<ICreateUserDTO> = userDefault) => ({
-    email: email || userDefault.email,
-    name: name || userDefault.name,
-    password: password || userDefault.password,
-  });
-
-  const makeStatementDto = ({
-    amount,
-    description,
-    type,
-    user_id,
-  }: ICreateStatementDTO) => ({
-    amount: amount,
-    description: description,
-    type: type,
-    user_id: user_id,
-  });
-
-  return {
-    makeUserDto,
-    makeStatementDto,
-  };
-};
 
 const makeSut = () => {
-  const usersRepository = new InMemoryUsersRepository();
-  const statementsRepository = new InMemoryStatementsRepository();
-  const createStatementUseCase = new CreateStatementUseCase(
-    usersRepository,
-    statementsRepository
-  );
-  const getBalanceUseCase = new GetBalanceUseCase(
+  const {
+    getStatementOperationUseCase,
     statementsRepository,
-    usersRepository
-  );
-  const getStatementOperationUseCase = new GetStatementOperationUseCase(
     usersRepository,
-    statementsRepository
-  );
-  const createUserUseCase = new CreateUserUseCase(usersRepository);
+  } = makeGetStatementOperationUseCase();
+  const { createStatementUseCase } = makeCreateStatementUseCase({
+    usersRepository,
+    statementsRepository,
+  });
+  const { getBalanceUseCase } = makeGetBalanceUseCase({
+    statementsRepository,
+    usersRepository,
+  });
+  const { createUserUseCase } = makeCreateUserUseCase({ usersRepository });
 
   return {
     usersRepository,
@@ -77,25 +43,18 @@ describe("GetStatementOperationUseCase", () => {
       createStatementUseCase,
       getStatementOperationUseCase,
     } = makeSut();
-    const { makeStatementDto, makeUserDto } = makeDTO();
 
     const userCreated = await usersRepository.create(makeUserDto());
-    const depositStatementDto1 = makeStatementDto({
+    const depositStatementDto1 = makeDepositStatementDto({
       amount: 10,
-      description: "any_description",
-      type: OperationType.DEPOSIT,
       user_id: userCreated.id!,
     });
-    const depositStatementDto2 = makeStatementDto({
+    const depositStatementDto2 = makeDepositStatementDto({
       amount: 20,
-      description: "any_description",
-      type: OperationType.DEPOSIT,
       user_id: userCreated.id!,
     });
-    const withdrawStatementDto1 = makeStatementDto({
+    const withdrawStatementDto1 = makeWithdrawStatementDto({
       amount: 5,
-      description: "any_description",
-      type: OperationType.WITHDRAW,
       user_id: userCreated.id!,
     });
 
@@ -129,12 +88,9 @@ describe("GetStatementOperationUseCase", () => {
 
   it("should not be able to get statement from an non existing user", async () => {
     const { getStatementOperationUseCase, statementsRepository } = makeSut();
-    const { makeStatementDto } = makeDTO();
 
-    const depositStatementDto = makeStatementDto({
+    const depositStatementDto = makeDepositStatementDto({
       amount: 10,
-      description: "any_description",
-      type: OperationType.DEPOSIT,
       user_id: "any_user_id",
     });
 
@@ -152,7 +108,6 @@ describe("GetStatementOperationUseCase", () => {
 
   it("should not be able to get the statement operation if not exist", async () => {
     const { getStatementOperationUseCase, createUserUseCase } = makeSut();
-    const { makeUserDto } = makeDTO();
 
     const userCreated = await createUserUseCase.execute(makeUserDto());
 
@@ -170,13 +125,10 @@ describe("GetStatementOperationUseCase", () => {
       statementsRepository,
       createUserUseCase,
     } = makeSut();
-    const { makeStatementDto, makeUserDto } = makeDTO();
 
     const userCreatedA = await createUserUseCase.execute(makeUserDto());
-    const depositStatementDto = makeStatementDto({
+    const depositStatementDto = makeDepositStatementDto({
       amount: 10,
-      description: "any_description",
-      type: OperationType.DEPOSIT,
       user_id: userCreatedA.id!,
     });
     const statementCreatedA = await statementsRepository.create(
