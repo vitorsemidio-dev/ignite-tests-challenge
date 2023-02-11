@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { OperationType } from "../modules/statements/entities/Statement";
 import { ICreateStatementDTO } from "../modules/statements/useCases/createStatement/ICreateStatementDTO";
+import { ICreateTransferStatementDTO } from "../modules/statements/useCases/createTransferStatement/ICreateTransferStatementDTO";
 
 type OverrideStatement = Partial<ICreateStatementDTO> &
   Pick<ICreateStatementDTO, "type">;
@@ -29,8 +30,13 @@ export function makeStatementWithdrawDto(
   return makeStatementDto({ type: OperationType.WITHDRAW, ...override });
 }
 
-type OverrideStatementTransfer = Omit<OverrideStatement, "type"> &
-  Required<Pick<OverrideStatement, "sender_id">>;
+type OverrideStatementTransfer = Partial<ICreateTransferStatementDTO>;
 export function makeStatementTransferDto(override: OverrideStatementTransfer) {
-  return makeStatementDto({ type: OperationType.TRANSFER, ...override });
+  return {
+    amount: 100,
+    description: "any_description",
+    receiver_id: uuidv4(),
+    sender_id: uuidv4(),
+    ...override,
+  };
 }
