@@ -29,7 +29,6 @@ describe("CreateTransferStatementUseCase", () => {
       statementsRepository,
       createTransferStatementUseCase,
     } = makeSut();
-
     const userSender = await usersRepository.create(
       makeUserDto({
         email: "sender@email.com",
@@ -60,7 +59,6 @@ describe("CreateTransferStatementUseCase", () => {
 
   it(`should not be able to create new statements with type '${OperationType.TRANSFER}' with insufficient funds`, async () => {
     const { usersRepository, createTransferStatementUseCase } = makeSut();
-
     const userSender = await usersRepository.create(
       makeUserDto({
         email: "sender@email.com",
@@ -83,9 +81,8 @@ describe("CreateTransferStatementUseCase", () => {
       await createTransferStatementUseCase.execute(transferStatementDto);
     }).rejects.toBeInstanceOf(CreateTransferStatementError.InsufficientFunds);
   });
-  it(`should not be able to create new statements with type '${OperationType.TRANSFER}' to non-exists user`, async () => {
+  it(`should not be able to create new statements with type '${OperationType.TRANSFER}' when receiver not exists`, async () => {
     const { usersRepository, createTransferStatementUseCase } = makeSut();
-
     const userSender = await usersRepository.create(
       makeUserDto({
         email: "sender@email.com",
@@ -103,9 +100,26 @@ describe("CreateTransferStatementUseCase", () => {
     }).rejects.toBeInstanceOf(CreateTransferStatementError.UserNotFound);
   });
 
+  it(`should not be able to create new statements with type '${OperationType.TRANSFER}' when sender not exists`, async () => {
+    const { usersRepository, createTransferStatementUseCase } = makeSut();
+    const userReceiver = await usersRepository.create(
+      makeUserDto({
+        email: "receiver@email.com",
+        name: "receiver",
+      })
+    );
+    const transferStatementDto = makeTransferStatementDto({
+      receiver_id: userReceiver.id!,
+      sender_id: uuidv4(),
+    });
+
+    await expect(async () => {
+      await createTransferStatementUseCase.execute(transferStatementDto);
+    }).rejects.toBeInstanceOf(CreateTransferStatementError.UserNotFound);
+  });
+
   it(`should not be able to create new statements with type '${OperationType.TRANSFER}' to yourself`, async () => {
     const { usersRepository, createTransferStatementUseCase } = makeSut();
-
     const userSender = await usersRepository.create(
       makeUserDto({
         email: "sender@email.com",
