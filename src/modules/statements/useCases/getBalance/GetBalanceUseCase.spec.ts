@@ -1,46 +1,19 @@
+import { makeCreateStatementUseCase } from "../../../../__tests__/CreateStatementUseCaseFactory";
+import { makeGetBalanceUseCase } from "../../../../__tests__/GetBalanceUseCaseFactory";
 import {
   makeDepositStatementDto,
   makeWithdrawStatementDto,
 } from "../../../../__tests__/StatementFactory";
-import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
-import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
-import { CreateStatementUseCase } from "../createStatement/CreateStatementUseCase";
-import { InMemoryUsersRepository } from "./../../../users/repositories/in-memory/InMemoryUsersRepository";
+import { makeUserDto } from "../../../../__tests__/UserFactory";
 import { GetBalanceError } from "./GetBalanceError";
-import { GetBalanceUseCase } from "./GetBalanceUseCase";
-
-const makeDTO = () => {
-  const userDefault = {
-    email: "test@email.com",
-    name: "test",
-    password: "test",
-  };
-  const makeUserDto = ({
-    email,
-    name,
-    password,
-  }: ICreateUserDTO = userDefault) => ({
-    email: email || userDefault.email,
-    name: name || userDefault.name,
-    password: password || userDefault.password,
-  });
-
-  return {
-    makeUserDto,
-  };
-};
 
 const makeSut = () => {
-  const usersRepository = new InMemoryUsersRepository();
-  const statementsRepository = new InMemoryStatementsRepository();
-  const createStatementUseCase = new CreateStatementUseCase(
-    usersRepository,
-    statementsRepository
-  );
-  const getBalanceUseCase = new GetBalanceUseCase(
+  const { createStatementUseCase, statementsRepository, usersRepository } =
+    makeCreateStatementUseCase();
+  const { getBalanceUseCase } = makeGetBalanceUseCase({
     statementsRepository,
-    usersRepository
-  );
+    usersRepository,
+  });
 
   return {
     usersRepository,
@@ -54,7 +27,6 @@ describe("GetBalanceUseCase", () => {
   it(`should be able to get the balance`, async () => {
     const { usersRepository, createStatementUseCase, getBalanceUseCase } =
       makeSut();
-    const { makeUserDto } = makeDTO();
 
     const userCreated = await usersRepository.create(makeUserDto());
     const depositStatementDto1 = makeDepositStatementDto({
