@@ -1,12 +1,14 @@
+import { v4 as uuidv4 } from "uuid";
+import {
+  makeStatementDepositDto,
+  makeStatementTransferDto,
+} from "../../../../__tests__/StatementFactory";
 import { InMemoryUsersRepository } from "../../../users/repositories/in-memory/InMemoryUsersRepository";
 import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
 import { OperationType } from "../../entities/Statement";
 import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
-import { CreateTransferStatementUseCase } from "./CreateTransferStatementUseCase";
-import { ICreateTransferStatementDTO } from "./ICreateTransferStatementDTO";
-import { v4 as uuidv4 } from "uuid";
-import { ICreateStatementDTO } from "../createStatement/ICreateStatementDTO";
 import { CreateTransferStatementError } from "./CreateTransferStatementError";
+import { CreateTransferStatementUseCase } from "./CreateTransferStatementUseCase";
 
 const makeDTO = () => {
   const userDefault = {
@@ -24,35 +26,8 @@ const makeDTO = () => {
     password: password || userDefault.password,
   });
 
-  const makeStatementDto = ({
-    amount,
-    description,
-    type,
-    user_id,
-  }: ICreateStatementDTO) => ({
-    amount: amount,
-    description: description,
-    type: type,
-    user_id: user_id,
-  });
-
-  const makeTransferStatementDto = ({
-    amount,
-    description,
-    receiver_id,
-    sender_id,
-  }: ICreateTransferStatementDTO) => ({
-    amount: amount,
-    description: description,
-    type: OperationType.TRANSFER,
-    receiver_id: receiver_id,
-    sender_id: sender_id,
-  });
-
   return {
     makeUserDto,
-    makeStatementDto,
-    makeTransferStatementDto,
   };
 };
 
@@ -78,8 +53,7 @@ describe("CreateTransferStatementUseCase", () => {
       statementsRepository,
       createTransferStatmentUseCase,
     } = makeSut();
-    const { makeTransferStatementDto, makeStatementDto, makeUserDto } =
-      makeDTO();
+    const { makeUserDto } = makeDTO();
 
     const userSender = await usersRepository.create(
       makeUserDto({
@@ -96,17 +70,14 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
     await statementsRepository.create(
-      makeStatementDto({
-        amount: 1,
-        description: "any_description",
-        type: OperationType.DEPOSIT,
+      makeStatementDepositDto({
+        amount: 1000,
         user_id: userSender.id!,
       })
     );
 
-    const transferStatementDto = makeTransferStatementDto({
-      amount: 1,
-      description: "any_description",
+    const transferStatementDto = makeStatementTransferDto({
+      amount: 100,
       sender_id: userSender.id!,
       receiver_id: userReceiver.id!,
     });
@@ -116,7 +87,7 @@ describe("CreateTransferStatementUseCase", () => {
 
   it(`should not be able to create new statements with type '${OperationType.TRANSFER}' with insufficient funds`, async () => {
     const { usersRepository, createTransferStatmentUseCase } = makeSut();
-    const { makeTransferStatementDto, makeUserDto } = makeDTO();
+    const { makeUserDto } = makeDTO();
 
     const userSender = await usersRepository.create(
       makeUserDto({
@@ -133,9 +104,7 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
 
-    const transferStatementDto = makeTransferStatementDto({
-      amount: 1,
-      description: "any_description",
+    const transferStatementDto = makeStatementTransferDto({
       sender_id: userSender.id!,
       receiver_id: userReceiver.id!,
     });
@@ -146,7 +115,7 @@ describe("CreateTransferStatementUseCase", () => {
   });
   it(`should not be able to create new statements with type '${OperationType.TRANSFER}' to non-exists user`, async () => {
     const { usersRepository, createTransferStatmentUseCase } = makeSut();
-    const { makeTransferStatementDto, makeUserDto } = makeDTO();
+    const { makeUserDto } = makeDTO();
 
     const userSender = await usersRepository.create(
       makeUserDto({
@@ -156,9 +125,7 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
 
-    const transferStatementDto = makeTransferStatementDto({
-      amount: 1,
-      description: "any_description",
+    const transferStatementDto = makeStatementTransferDto({
       sender_id: userSender.id!,
       receiver_id: uuidv4(),
     });
@@ -170,7 +137,7 @@ describe("CreateTransferStatementUseCase", () => {
 
   it(`should not be able to create new statements with type '${OperationType.TRANSFER}' to yourself`, async () => {
     const { usersRepository, createTransferStatmentUseCase } = makeSut();
-    const { makeTransferStatementDto, makeUserDto } = makeDTO();
+    const { makeUserDto } = makeDTO();
 
     const userSender = await usersRepository.create(
       makeUserDto({
@@ -180,9 +147,7 @@ describe("CreateTransferStatementUseCase", () => {
       })
     );
 
-    const transferStatementDto = makeTransferStatementDto({
-      amount: 1,
-      description: "any_description",
+    const transferStatementDto = makeStatementTransferDto({
       sender_id: userSender.id!,
       receiver_id: userSender.id!,
     });
