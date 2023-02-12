@@ -6,10 +6,12 @@ import {
   makeE2EWithdrawStatement,
 } from "../../../../__tests__/StatementFactory";
 import { TestDatabase } from "../../../../__tests__/TestDbConnection";
+import { makeJWTToken } from "../../../../__tests__/TokenFactory";
 import { makeUser, makeUserDto } from "../../../../__tests__/UserFactory";
 import { IAuthenticateUserResponseDTO } from "../../../users/useCases/authenticateUser/IAuthenticateUserResponseDTO";
 import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
 import { OperationType } from "./../../entities/Statement";
+import { GetBalanceError } from "./GetBalanceError";
 
 const makeE2EUser = async (
   overrideCreateUserDto: Partial<ICreateUserDTO> = {}
@@ -67,7 +69,7 @@ describe("Get Balance Controller", () => {
   });
 
   it("should be able to get balance", async () => {
-    const expectedAmount = 500;
+    const expectedBalance = 500;
     const { token, user } = await makeE2EUser({
       email: "user_balance@email.com",
     });
@@ -116,7 +118,7 @@ describe("Get Balance Controller", () => {
     expect(response.body).toHaveProperty("statement");
     expect(response.body).toEqual(
       expect.objectContaining({
-        balance: expectedAmount,
+        balance: expectedBalance,
         statement: expect.objectContaining([
           expect.objectContaining({
             amount: depositStatementDto.amount,
@@ -138,6 +140,23 @@ describe("Get Balance Controller", () => {
             type: OperationType.TRANSFER,
           }),
         ]),
+      })
+    );
+  });
+
+  it("should not be able to get balance from nonexists user", async () => {
+    const expectedError = new GetBalanceError();
+    const user = makeUser();
+    const { token } = makeJWTToken(user);
+
+    const { body } = await request(app)
+      .get("/api/v1/statements/balance")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(expectedError.statusCode);
+
+    expect(body).toEqual(
+      expect.objectContaining({
+        message: expectedError.message,
       })
     );
   });
