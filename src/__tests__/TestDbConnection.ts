@@ -17,6 +17,10 @@ export const connectionOptions: ConnectionOptions = {
 
 export class TestDatabase {
   public static async create() {
+    const connection = getConnection();
+    if (connection.isConnected) {
+      return;
+    }
     await createConnection(connectionOptions);
   }
 
