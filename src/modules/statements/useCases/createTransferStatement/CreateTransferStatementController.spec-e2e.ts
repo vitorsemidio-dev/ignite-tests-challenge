@@ -1,9 +1,35 @@
 import request from "supertest";
 import { app } from "../../../../app";
 import { makeDepositStatementDto } from "../../../../__tests__/StatementFactory";
-import { makeUserDto } from "../../../../__tests__/UserFactory";
+import { makeUser, makeUserDto } from "../../../../__tests__/UserFactory";
+import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
 import { TestDatabase } from "./../../../../__tests__/TestDbConnection";
+import { IAuthenticateUserResponseDTO } from "./../../../users/useCases/authenticateUser/IAuthenticateUserResponseDTO";
 import { CreateTransferStatementError } from "./CreateTransferStatementError";
+
+const makeE2EUser = async (
+  overrideCreateUserDto: Partial<ICreateUserDTO> = {}
+) => {
+  const userDto = makeUserDto({
+    ...overrideCreateUserDto,
+  });
+  await request(app).post("/api/v1/users").send(userDto).expect(201);
+  const { body } = await request(app).post("/api/v1/sessions").send({
+    email: userDto.email,
+    password: userDto.password,
+  });
+
+  const sessionBody = body as IAuthenticateUserResponseDTO;
+  const user = makeUser({
+    ...sessionBody.user,
+    ...userDto,
+  });
+
+  return {
+    token: sessionBody.token,
+    user,
+  };
+};
 
 describe("Create Transfer Statement Controller", () => {
   beforeEach(async () => {
@@ -16,31 +42,16 @@ describe("Create Transfer Statement Controller", () => {
   });
 
   it("should be able to create a new transfer statement", async () => {
-    const sender = makeUserDto({
+    const sender = await makeE2EUser({
       email: "sender1@email.com",
     });
-    const receiver = makeUserDto({
+    const receiver = await makeE2EUser({
       email: "receiver1@email.com",
     });
-    await request(app).post("/api/v1/users").send(sender).expect(201);
-    await request(app).post("/api/v1/users").send(receiver).expect(201);
-    const { body: sessionSenderBody } = await request(app)
-      .post("/api/v1/sessions")
-      .send({
-        email: sender.email,
-        password: sender.password,
-      });
-    const { body: sessionReceiverBody } = await request(app)
-      .post("/api/v1/sessions")
-      .send({
-        email: receiver.email,
-        password: receiver.password,
-      });
-    const { token } = sessionSenderBody;
     const depositStatementDto = makeDepositStatementDto();
     await request(app)
       .post("/api/v1/statements/deposit")
-      .set("Authorization", `Bearer ${token}`)
+      .set("Authorization", `Bearer ${sender.token}`)
       .send(depositStatementDto)
       .expect(201);
     const requestBody = {
@@ -49,35 +60,20 @@ describe("Create Transfer Statement Controller", () => {
     };
 
     await request(app)
-      .post(`/api/v1/statements/transfers/${sessionReceiverBody.user.id}`)
-      .set("Authorization", `Bearer ${token}`)
+      .post(`/api/v1/statements/transfers/${receiver.user.id}`)
+      .set("Authorization", `Bearer ${sender.token}`)
       .send(requestBody)
       .expect(201);
   });
 
   it("should not be able to create a new transfer statement if the sender does not have enough funds", async () => {
     const expectedError = new CreateTransferStatementError.InsufficientFunds();
-    const sender = makeUserDto({
+    const sender = await makeE2EUser({
       email: "sender1@email.com",
     });
-    const receiver = makeUserDto({
+    const receiver = await makeE2EUser({
       email: "receiver1@email.com",
     });
-    await request(app).post("/api/v1/users").send(sender).expect(201);
-    await request(app).post("/api/v1/users").send(receiver).expect(201);
-    const { body: sessionSenderBody } = await request(app)
-      .post("/api/v1/sessions")
-      .send({
-        email: sender.email,
-        password: sender.password,
-      });
-    const { body: sessionReceiverBody } = await request(app)
-      .post("/api/v1/sessions")
-      .send({
-        email: receiver.email,
-        password: receiver.password,
-      });
-    const { token } = sessionSenderBody;
 
     const requestBody = {
       amount: 100,
@@ -85,8 +81,8 @@ describe("Create Transfer Statement Controller", () => {
     };
 
     const { body: transferStatementBody } = await request(app)
-      .post(`/api/v1/statements/transfers/${sessionReceiverBody.user.id}`)
-      .set("Authorization", `Bearer ${token}`)
+      .post(`/api/v1/statements/transfers/${receiver.user.id}`)
+      .set("Authorization", `Bearer ${sender.token}`)
       .send(requestBody)
       .expect(expectedError.statusCode);
 
