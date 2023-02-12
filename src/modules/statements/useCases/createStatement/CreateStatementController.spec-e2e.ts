@@ -2,11 +2,16 @@ import request from "supertest";
 import { app } from "../../../../app";
 import {
   makeDepositStatementDto,
+  makeE2EDepositStatement,
   makeWithdrawStatementDto,
 } from "../../../../__tests__/StatementFactory";
 import { TestDatabase } from "../../../../__tests__/TestDbConnection";
 import { makeJWTToken } from "../../../../__tests__/TokenFactory";
-import { makeUser, makeUserDto } from "../../../../__tests__/UserFactory";
+import {
+  makeE2EUser,
+  makeUser,
+  makeUserDto,
+} from "../../../../__tests__/UserFactory";
 import { JWTTokenMissingError } from "./../../../../shared/errors/JWTTokenMissingError";
 import { CreateStatementError } from "./CreateStatementError";
 
@@ -60,27 +65,15 @@ describe("CreateStatementController", () => {
   });
 
   it("should be able to create a new withdraw statement", async () => {
-    const user = makeUserDto();
-    await request(app).post("/api/v1/users").send(user).expect(201);
-
-    const { body: sessionBody } = await request(app)
-      .post("/api/v1/sessions")
-      .send({
-        email: user.email,
-        password: user.password,
-      });
-
-    const { token, user: userSession } = sessionBody;
-
-    const depositStatementDto = makeDepositStatementDto({
-      amount: 500,
-      description: "deposit_description",
-    });
-
-    await request(app)
-      .post("/api/v1/statements/deposit")
-      .set("Authorization", `Bearer ${token}`)
-      .send(depositStatementDto);
+    const { token, user } = await makeE2EUser(request(app));
+    await makeE2EDepositStatement(
+      request(app),
+      {
+        amount: 500,
+        description: "deposit_description",
+      },
+      { token }
+    );
 
     const withdrawStatementDto = makeWithdrawStatementDto({
       amount: 200,
@@ -98,7 +91,7 @@ describe("CreateStatementController", () => {
         amount: withdrawStatementDto.amount,
         description: withdrawStatementDto.description,
         type: "withdraw",
-        user_id: userSession.id,
+        user_id: user.id,
         created_at: expect.any(String),
         updated_at: expect.any(String),
       })
@@ -106,18 +99,8 @@ describe("CreateStatementController", () => {
   });
 
   it("should not be able to create a new withdraw statement if user has insufficient funds", async () => {
-    const user = makeUserDto();
-    await request(app).post("/api/v1/users").send(user).expect(201);
+    const { token } = await makeE2EUser(request(app));
     const expectedError = new CreateStatementError.InsufficientFunds();
-
-    const { body: sessionBody } = await request(app)
-      .post("/api/v1/sessions")
-      .send({
-        email: user.email,
-        password: user.password,
-      });
-
-    const { token } = sessionBody;
 
     const withdrawStatementDto = makeWithdrawStatementDto({
       amount: 200,

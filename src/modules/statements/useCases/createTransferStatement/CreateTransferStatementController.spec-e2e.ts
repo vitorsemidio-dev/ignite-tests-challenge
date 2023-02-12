@@ -1,36 +1,10 @@
 import request from "supertest";
 import { app } from "../../../../app";
-import { makeDepositStatementDto } from "../../../../__tests__/StatementFactory";
+import { makeE2EDepositStatement } from "../../../../__tests__/StatementFactory";
 import { makeJWTToken } from "../../../../__tests__/TokenFactory";
-import { makeUser, makeUserDto } from "../../../../__tests__/UserFactory";
-import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
+import { makeE2EUser, makeUser } from "../../../../__tests__/UserFactory";
 import { TestDatabase } from "./../../../../__tests__/TestDbConnection";
-import { IAuthenticateUserResponseDTO } from "./../../../users/useCases/authenticateUser/IAuthenticateUserResponseDTO";
 import { CreateTransferStatementError } from "./CreateTransferStatementError";
-
-const makeE2EUser = async (
-  overrideCreateUserDto: Partial<ICreateUserDTO> = {}
-) => {
-  const userDto = makeUserDto({
-    ...overrideCreateUserDto,
-  });
-  await request(app).post("/api/v1/users").send(userDto).expect(201);
-  const { body } = await request(app).post("/api/v1/sessions").send({
-    email: userDto.email,
-    password: userDto.password,
-  });
-
-  const sessionBody = body as IAuthenticateUserResponseDTO;
-  const user = makeUser({
-    ...sessionBody.user,
-    ...userDto,
-  });
-
-  return {
-    token: sessionBody.token,
-    user,
-  };
-};
 
 describe("Create Transfer Statement Controller", () => {
   beforeEach(async () => {
@@ -43,18 +17,14 @@ describe("Create Transfer Statement Controller", () => {
   });
 
   it("should be able to create a new transfer statement", async () => {
-    const sender = await makeE2EUser({
+    const sender = await makeE2EUser(request(app), {
       email: "sender@email.com",
     });
-    const receiver = await makeE2EUser({
+    const receiver = await makeE2EUser(request(app), {
       email: "receiver@email.com",
     });
-    const depositStatementDto = makeDepositStatementDto();
-    await request(app)
-      .post("/api/v1/statements/deposit")
-      .set("Authorization", `Bearer ${sender.token}`)
-      .send(depositStatementDto)
-      .expect(201);
+    await makeE2EDepositStatement(request(app), {}, { token: sender.token });
+
     const requestBody = {
       amount: 100,
       description: "transfer_description",
@@ -69,10 +39,10 @@ describe("Create Transfer Statement Controller", () => {
 
   it("should not be able to create a new transfer statement if the sender does not have enough funds", async () => {
     const expectedError = new CreateTransferStatementError.InsufficientFunds();
-    const sender = await makeE2EUser({
+    const sender = await makeE2EUser(request(app), {
       email: "sender@email.com",
     });
-    const receiver = await makeE2EUser({
+    const receiver = await makeE2EUser(request(app), {
       email: "receiver@email.com",
     });
 
@@ -102,7 +72,7 @@ describe("Create Transfer Statement Controller", () => {
       email: "sender@email.com",
     });
     const { token: senderToken } = makeJWTToken(sender);
-    const receiver = await makeE2EUser({
+    const receiver = await makeE2EUser(request(app), {
       email: "receiver@email.com",
     });
 
@@ -128,7 +98,7 @@ describe("Create Transfer Statement Controller", () => {
     const expectedError = new CreateTransferStatementError.UserNotFound(
       "Receiver not found"
     );
-    const sender = await makeE2EUser({
+    const sender = await makeE2EUser(request(app), {
       email: "sender@email.com",
     });
     const receiver = makeUser({
@@ -157,7 +127,7 @@ describe("Create Transfer Statement Controller", () => {
     const expectedError = new CreateTransferStatementError.OperationForbidden(
       "You can't transfer to yourself"
     );
-    const sender = await makeE2EUser({
+    const sender = await makeE2EUser(request(app), {
       email: "sender@email.com",
     });
 

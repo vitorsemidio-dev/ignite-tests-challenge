@@ -7,35 +7,9 @@ import {
 } from "../../../../__tests__/StatementFactory";
 import { TestDatabase } from "../../../../__tests__/TestDbConnection";
 import { makeJWTToken } from "../../../../__tests__/TokenFactory";
-import { makeUser, makeUserDto } from "../../../../__tests__/UserFactory";
-import { IAuthenticateUserResponseDTO } from "../../../users/useCases/authenticateUser/IAuthenticateUserResponseDTO";
-import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
+import { makeE2EUser, makeUser } from "../../../../__tests__/UserFactory";
 import { OperationType } from "./../../entities/Statement";
 import { GetBalanceError } from "./GetBalanceError";
-
-const makeE2EUser = async (
-  overrideCreateUserDto: Partial<ICreateUserDTO> = {}
-) => {
-  const userDto = makeUserDto({
-    ...overrideCreateUserDto,
-  });
-  await request(app).post("/api/v1/users").send(userDto).expect(201);
-  const { body } = await request(app).post("/api/v1/sessions").send({
-    email: userDto.email,
-    password: userDto.password,
-  });
-
-  const sessionBody = body as IAuthenticateUserResponseDTO;
-  const user = makeUser({
-    ...sessionBody.user,
-    ...userDto,
-  });
-
-  return {
-    token: sessionBody.token,
-    user,
-  };
-};
 
 describe("Get Balance Controller", () => {
   beforeEach(async () => {
@@ -49,7 +23,7 @@ describe("Get Balance Controller", () => {
   });
 
   it("should be able to get empty balance", async () => {
-    const { token } = await makeE2EUser({
+    const { token } = await makeE2EUser(request(app), {
       email: "user_balance@email.com",
     });
 
@@ -70,10 +44,10 @@ describe("Get Balance Controller", () => {
 
   it("should be able to get balance", async () => {
     const expectedBalance = 500;
-    const { token, user } = await makeE2EUser({
+    const { token, user } = await makeE2EUser(request(app), {
       email: "user_balance@email.com",
     });
-    const { user: receiver } = await makeE2EUser({
+    const { user: receiver } = await makeE2EUser(request(app), {
       email: "receiver_balance@email.com",
     });
 
@@ -144,7 +118,7 @@ describe("Get Balance Controller", () => {
     );
   });
 
-  it("should not be able to get balance from nonexists user", async () => {
+  it("should not be able to get balance from non-existent user", async () => {
     const expectedError = new GetBalanceError();
     const user = makeUser();
     const { token } = makeJWTToken(user);
