@@ -1,15 +1,15 @@
-import { OperationType } from "./../../entities/Statement";
 import request from "supertest";
 import { app } from "../../../../app";
 import {
-  makeDepositStatementDto,
-  makeTransferStatementDto,
-  makeWithdrawStatementDto,
+  makeE2EDepositStatement,
+  makeE2ETransferStatement,
+  makeE2EWithdrawStatement,
 } from "../../../../__tests__/StatementFactory";
 import { TestDatabase } from "../../../../__tests__/TestDbConnection";
 import { makeUser, makeUserDto } from "../../../../__tests__/UserFactory";
 import { IAuthenticateUserResponseDTO } from "../../../users/useCases/authenticateUser/IAuthenticateUserResponseDTO";
 import { ICreateUserDTO } from "../../../users/useCases/createUser/ICreateUserDTO";
+import { OperationType } from "./../../entities/Statement";
 
 const makeE2EUser = async (
   overrideCreateUserDto: Partial<ICreateUserDTO> = {}
@@ -75,38 +75,37 @@ describe("Get Balance Controller", () => {
       email: "receiver_balance@email.com",
     });
 
-    const depositStatementDto = makeDepositStatementDto({
-      amount: 900,
-      description: "deposit_description 1",
-      user_id: user.id,
-    });
-    const withdrawStatementDto = makeWithdrawStatementDto({
-      amount: 250,
-      description: "withdraw_description 1",
-      user_id: user.id,
-    });
-    const transferStatementDto = makeTransferStatementDto({
-      amount: 150,
-      description: "transfer_description 1",
-      sender_id: user.id,
-      receiver_id: receiver.id,
-    });
-
-    const { body: depositStatementBody } = await request(app)
-      .post("/api/v1/statements/deposit")
-      .set("Authorization", `Bearer ${token}`)
-      .send(depositStatementDto)
-      .expect(201);
-    const { body: withdrawStatementBody } = await request(app)
-      .post("/api/v1/statements/withdraw")
-      .set("Authorization", `Bearer ${token}`)
-      .send(withdrawStatementDto)
-      .expect(201);
-    await request(app)
-      .post(`/api/v1/statements/transfers/${receiver.id}`)
-      .set("Authorization", `Bearer ${token}`)
-      .send(transferStatementDto)
-      .expect(201);
+    const { body: depositStatementBody, dto: depositStatementDto } =
+      await makeE2EDepositStatement(
+        request(app),
+        {
+          amount: 900,
+          description: "deposit_description 1",
+          user_id: user.id,
+        },
+        { token }
+      );
+    const { body: withdrawStatementBody, dto: withdrawStatementDto } =
+      await makeE2EWithdrawStatement(
+        request(app),
+        {
+          amount: 250,
+          description: "withdraw_description 1",
+          user_id: user.id,
+        },
+        { token }
+      );
+    const { body: transferStatementBody, dto: transferStatementDto } =
+      await makeE2ETransferStatement(
+        request(app),
+        {
+          amount: 150,
+          description: "transfer_description 1",
+          sender_id: user.id,
+          receiver_id: receiver.id,
+        },
+        { token }
+      );
 
     const response = await request(app)
       .get("/api/v1/statements/balance")
